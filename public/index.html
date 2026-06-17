@@ -33,6 +33,7 @@
 
         form.addEventListener('submit', async (ev) => {
             ev.preventDefault()
+            form.fieldset.setAttribute('disabled', true)
             const title = form.title.value
 
             if (title.trim() === '')
@@ -57,10 +58,10 @@
 
 <body>
 
-    <form id="add">
+    <fieldset id="add">
         <input name="title">
         <button name="addBtn">add</button>
-    </form>
+    </fieldset>
 
     <ul>
         <template id="itemTemplate">
