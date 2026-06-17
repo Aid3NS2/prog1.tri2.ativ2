@@ -1,0 +1,75 @@
+<!DOCTYPE HTML>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf=8">
+    <title>To-Do</title>
+
+    <script type="module">
+
+        const form = document.querySelector('#add')
+        // const itemTemplate = document.querySelector('#itemTemplate')
+
+        function createElementItem(elIndex, elTitle) {
+            const clone = itemTemplate.content.cloneNode(true)
+            const title = clone.querySelector('span')
+            const delButton = clone.querySelector('button')
+
+            title.innerText = elTitle
+            delButton.dataset.id = elIndex // de acordo com o prof : NÃO FAZER ISSO NUNCA !!! NÓS SEREMOS HACKEADOS !!!!!
+
+            itemTemplate.parentElement.append(clone)
+
+        }
+
+        createElementItem(0, "wawa")
+
+        void async function() {
+            const response = await fetch('/todo')
+            const items = await response.json()
+            items.forEach((item, index) => createElementItem(index, item.title))
+            console.log(data)
+        }();
+
+        form.addEventListener('submit', async (ev) => {
+            ev.preventDefault()
+            const title = form.title.value
+
+            if (title.trim() === '')
+                return
+
+            const response = await fetch('/todo', {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ title })
+            })
+
+            const item = await response.json()
+            console.log(item)
+            createElementItem(-1, title)
+            ev.stopImmediatePropagation() // perguntar sobre esse propagation :P
+            
+        })
+
+    </script>
+
+</head>
+
+<body>
+
+    <form id="add">
+        <input name="title">
+        <button name="addBtn">add</button>
+    </form>
+
+    <ul>
+        <template id="itemTemplate">
+            <li>
+                <span>...</span><button>del</button>
+            </li>
+        </template>
+    </ul>
+
+</body>
+
+</html>
