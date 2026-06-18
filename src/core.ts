@@ -33,19 +33,36 @@ class TodoList {
    */
   async addItem(item: Item) {
     const items = await this.items
-    if (!item) 
+    if (!item)
       throw 'item não pode ser nulo ou indefinido'
-    if (!item.title || !item.title.trim()) 
+    if (!item.title || !item.title.trim())
       throw 'item.title não pode ser nulo ou indefinido'
     items.push(item)
     await this.saveListToDisk()
+    return items.length - 1
   }
+
+  
+  /**
+  * Editar um item
+  */
+  async editItem(index: number, newTitle: string) {
+
+
+    const items = await this.items;
+    items.splice(index, 1, new Item(newTitle));
+    await this.saveListToDisk();
+
+  }
+
 
   /**
    * Remove um item da lista de item pelo indice
    */
   async removeItem(index: number) {
     const items = await this.items
+    if (!items[index])
+      throw `Não foi possível remover o item de indice ${index}, pois ele não existe`
     items.splice(index, 1)
     await this.saveListToDisk()
   }

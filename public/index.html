@@ -1,76 +1,72 @@
-<!DOCTYPE HTML>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang='pt-BR'>
 
 <head>
-    <meta charset="utf=8">
-    <title>To-Do</title>
+  <meta charset='utf-8'>
+  <title>To-Do</title>
+  <script type="module">
+    const form = document.querySelector('#add')
+    // const itemTemplate = document.querySelector("#itemTemplate")
+    // const add...
 
-    <script type="module">
+    function createElementItem(index, title) {
+      const elClone = itemTemplate.content.cloneNode(true)
+      const elTitle = elClone.querySelector('span')
+      const elDelButton = elClone.querySelector('button')
+      elTitle.innerText = title
+      // elDelButton.dataset.id = index // abre brecha pra um HACKIN danado!
+      elDelButton.addEventListener('click', async () => {
+        elDelButton.setAttribute('disabled', true)
+        const response = await fetch(`/todo/${index}`, { method: "DELETE" })
+        if (response.ok) 
+          return elDelButton.closest('li').remove()
+        elDelButton.removeAttribute('disabled')
+        const msg = await response.text()
+        alert(`Erro: ${msg}`)
+      })
+      itemTemplate.parentElement.append(elClone)
+    }
 
-        const form = document.querySelector('#add')
-        // const itemTemplate = document.querySelector('#itemTemplate')
+    void async function () {
+      const response = await fetch('/todo')
+      const items = await response.json()
+      items.forEach((item, index) => createElementItem(index, item.title))
+    }();
 
-        function createElementItem(elIndex, elTitle) {
-            const clone = itemTemplate.content.cloneNode(true)
-            const title = clone.querySelector('span')
-            const delButton = clone.querySelector('button')
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault()
+      const title = form.title.value
+      if (title.trim() === '') return
+      form.fieldset.setAttribute('disabled', true)
+      const response = await fetch('/todo', {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title })
+      })
+      const item = await response.json()
+      createElementItem(item.index, title)
+      form.title.value = ''
+      form.fieldset.removeAttribute('disabled')
+    })
 
-            title.innerText = elTitle
-            delButton.dataset.id = elIndex // de acordo com o prof : NÃO FAZER ISSO NUNCA !!! NÓS SEREMOS HACKEADOS !!!!!
-
-            itemTemplate.parentElement.append(clone)
-
-        }
-
-        createElementItem(0, "wawa")
-
-        void async function() {
-            const response = await fetch('/todo')
-            const items = await response.json()
-            items.forEach((item, index) => createElementItem(index, item.title))
-            console.log(data)
-        }();
-
-        form.addEventListener('submit', async (ev) => {
-            ev.preventDefault()
-            form.fieldset.setAttribute('disabled', true)
-            const title = form.title.value
-
-            if (title.trim() === '')
-                return
-
-            const response = await fetch('/todo', {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ title })
-            })
-
-            const item = await response.json()
-            console.log(item)
-            createElementItem(-1, title)
-            ev.stopImmediatePropagation() // perguntar sobre esse propagation :P
-            
-        })
-
-    </script>
-
+  </script>
 </head>
 
 <body>
-
-    <fieldset id="add">
-        <input name="title">
-        <button name="addBtn">add</button>
+  <form id="add">
+    <fieldset name="fieldset">
+      <input name="title">
+      <button name="btAdd">add</button>
     </fieldset>
-
-    <ul>
-        <template id="itemTemplate">
-            <li>
-                <span>...</span><button>del</button>
-            </li>
-        </template>
-    </ul>
-
+  </form>
+  <ul>
+    <template id="itemTemplate">
+      <li>
+        <button>del</button>
+        <span>...</span>
+      </li>
+    </template>
+  </ul>
 </body>
 
 </html>
