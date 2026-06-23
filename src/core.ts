@@ -1,5 +1,5 @@
 class Item {
-  constructor(public title: string) { }
+  constructor(public title: string) {}
 }
 
 class TodoList {
@@ -8,7 +8,7 @@ class TodoList {
 
   constructor(filePath: string) {
     this.filePath = filePath
-    this.items = this.readListFromDisk()
+    this.items = this.loadListFromDisk()
   }
 
   private async saveListToDisk() {
@@ -17,64 +17,70 @@ class TodoList {
     await file.write(data)
   }
 
-  private async readListFromDisk() {
-    const file = Bun.file(this.filePath)
-    // const text = await file.text()
-    // const data = JSON.parse(text)
-    const data = await file.json()
-    const items: Item[] = data.map((v: any) => {
-      return new Item(v.title)
-    })
-    return items
+  private async loadListFromDisk() {
+    try {
+      const file = Bun.file(this.filePath)
+      const data = await file.json() as Item[]
+      return data.map(item => new Item(item.title))
+    } catch {
+      return []
+    }
   }
 
-  /**
-   * Adiciona um novo item na lista de item
-   */
   async addItem(item: Item) {
     const items = await this.items
+
     if (!item)
-      throw 'item não pode ser nulo ou indefinido'
-    if (!item.title || !item.title.trim())
-      throw 'item.title não pode ser nulo ou indefinido'
+      throw "Item inválido"
+
+    if (!item.title.trim())
+      throw "Item deve conter um título"
+
     items.push(item)
+
     await this.saveListToDisk()
+
     return items.length - 1
   }
 
-  
-  /**
-  * Editar um item
-  */
-  async editItem(index: number, newTitle: string) {
-
-
-    const items = await this.items;
-    items.splice(index, 1, new Item(newTitle));
-    await this.saveListToDisk();
-
-  }
-
-
-  /**
-   * Remove um item da lista de item pelo indice
-   */
   async removeItem(index: number) {
     const items = await this.items
+
     if (!items[index])
-      throw `Não foi possível remover o item de indice ${index}, pois ele não existe`
+      throw `Item ${index} não existe`
+
     items.splice(index, 1)
+
     await this.saveListToDisk()
   }
 
-  /**
-   * Retona uma cópia da lista de itens
-   */
-  async getItems() {
+  async updateItem(index: number, title: string) {
     const items = await this.items
-    return Array.from(items)
+
+    if (!items[index])
+      throw `Item ${index} não existe`
+
+    if (!title.trim())
+      throw "Título inválido"
+
+    items[index].title = title
+
+    await this.saveListToDisk()
+  }
+
+  async getItems() {
+    return Array.from(await this.items)
+  }
+
+  async getItem(index: number) {
+    const items = await this.items
+
+    if (!items[index])
+      throw `Item ${index} não existe`
+
+    return items[index]
   }
 }
 
 export default TodoList
-export { Item, TodoList }
+export { TodoList, Item }

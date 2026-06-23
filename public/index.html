@@ -1,72 +1,196 @@
 <!DOCTYPE html>
-<html lang='pt-BR'>
+<html lang="pt-BR">
 
 <head>
-  <meta charset='utf-8'>
+  <meta charset="UTF-8">
   <title>To-Do</title>
-  <script type="module">
-    const form = document.querySelector('#add')
-    // const itemTemplate = document.querySelector("#itemTemplate")
-    // const add...
-
-    function createElementItem(index, title) {
-      const elClone = itemTemplate.content.cloneNode(true)
-      const elTitle = elClone.querySelector('span')
-      const elDelButton = elClone.querySelector('button')
-      elTitle.innerText = title
-      // elDelButton.dataset.id = index // abre brecha pra um HACKIN danado!
-      elDelButton.addEventListener('click', async () => {
-        elDelButton.setAttribute('disabled', true)
-        const response = await fetch(`/todo/${index}`, { method: "DELETE" })
-        if (response.ok) 
-          return elDelButton.closest('li').remove()
-        elDelButton.removeAttribute('disabled')
-        const msg = await response.text()
-        alert(`Erro: ${msg}`)
-      })
-      itemTemplate.parentElement.append(elClone)
-    }
-
-    void async function () {
-      const response = await fetch('/todo')
-      const items = await response.json()
-      items.forEach((item, index) => createElementItem(index, item.title))
-    }();
-
-    form.addEventListener('submit', async (ev) => {
-      ev.preventDefault()
-      const title = form.title.value
-      if (title.trim() === '') return
-      form.fieldset.setAttribute('disabled', true)
-      const response = await fetch('/todo', {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title })
-      })
-      const item = await response.json()
-      createElementItem(item.index, title)
-      form.title.value = ''
-      form.fieldset.removeAttribute('disabled')
-    })
-
-  </script>
 </head>
 
 <body>
-  <form id="add">
-    <fieldset name="fieldset">
-      <input name="title">
-      <button name="btAdd">add</button>
-    </fieldset>
+
+  <h1>Lista de Tarefas</h1>
+
+  <form id="elCreateForm">
+    <input
+      id="elTitleInput"
+      placeholder="Nova tarefa"
+    >
+
+    <button>
+      Adicionar
+    </button>
   </form>
-  <ul>
-    <template id="itemTemplate">
-      <li>
-        <button>del</button>
-        <span>...</span>
-      </li>
-    </template>
-  </ul>
+
+  <hr>
+
+  <ul id="elList"></ul>
+
+  <template id="elItemTemplate">
+    <li>
+      <span class="title"></span>
+
+      <button class="edit">
+        editar
+      </button>
+
+      <button class="delete">
+        excluir
+      </button>
+    </li>
+  </template>
+
+  <script>
+    const elCreateForm =
+      document.querySelector("#elCreateForm")
+
+    const elTitleInput =
+      document.querySelector("#elTitleInput")
+
+    const elList =
+      document.querySelector("#elList")
+
+    const elItemTemplate =
+      document.querySelector("#elItemTemplate")
+
+    function createItemElement(index, title) {
+
+      const clone =
+        elItemTemplate.content.cloneNode(true)
+
+      const elTitle =
+        clone.querySelector(".title")
+
+      const elEdit =
+        clone.querySelector(".edit")
+
+      const elDelete =
+        clone.querySelector(".delete")
+
+      elTitle.textContent = title
+
+      elEdit.addEventListener(
+        "click",
+        async () => {
+
+          const novoTitulo =
+            prompt(
+              "Novo título:",
+              title
+            )
+
+          if (!novoTitulo)
+            return
+
+          const request =
+            await fetch(
+              `/todo/${index}`,
+              {
+                method: "PUT",
+                headers: {
+                  "content-type":
+                    "application/json"
+                },
+                body: JSON.stringify({
+                  title: novoTitulo
+                })
+              }
+            )
+
+          if (!request.ok) {
+            alert(await request.text())
+            return
+          }
+
+          elTitle.textContent =
+            novoTitulo
+        }
+      )
+
+      elDelete.addEventListener(
+        "click",
+        async () => {
+
+          const request =
+            await fetch(
+              `/todo/${index}`,
+              {
+                method: "DELETE"
+              }
+            )
+
+          if (!request.ok) {
+            alert(await request.text())
+            return
+          }
+
+          loadItems()
+        }
+      )
+
+      elList.append(clone)
+    }
+
+    async function loadItems() {
+
+      const request =
+        await fetch("/todo")
+
+      const items =
+        await request.json()
+
+      elList.innerHTML = ""
+
+      items.forEach(
+        (item, index) => {
+          createItemElement(
+            index,
+            item.title
+          )
+        }
+      )
+    }
+
+    elCreateForm.addEventListener(
+      "submit",
+      async (ev) => {
+
+        ev.preventDefault()
+
+        const title =
+          elTitleInput.value.trim()
+
+        if (!title)
+          return
+
+        const request =
+          await fetch(
+            "/todo",
+            {
+              method: "POST",
+              headers: {
+                "content-type":
+                  "application/json"
+              },
+              body: JSON.stringify({
+                title
+              })
+            }
+          )
+
+        if (!request.ok) {
+          alert(await request.text())
+          return
+        }
+
+        elTitleInput.value = ""
+
+        loadItems()
+      }
+    )
+
+    loadItems()
+  </script>
+
 </body>
 
 </html>

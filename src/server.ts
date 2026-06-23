@@ -1,71 +1,165 @@
-import TodoList, { Item } from './core'
-const todolist = new TodoList('todolist.json')
+import TodoListClass, { Item } from "./core"
 
-async function requestTest(req: Bun.BunRequest) {
-    return Response.json({
-        method: req.method,
-        time: new Date().toLocaleString('pt-BR'),
-        body: await req.body?.text(),
-        key: crypto.randomUUID()
-    });
+const todolist = new TodoListClass("todolist.json")
+
+async function testRoute(req: Request) {
+  return Response.json({
+    method: req.method,
+    time: new Date().toLocaleString("pt-BR"),
+    body: await req.text(),
+    key: crypto.randomUUID()
+  })
 }
 
 const server = Bun.serve({
-    port: 3000,
-    routes: {
-        '/' : () => new Response(Bun.file('./public/index.html')),
-        '/api-debugger': (req) => new Response(Bun.file('./public/api-debugger.html')),
-        '/test': requestTest,
-        '/todo': {
-            GET: async () => {
-                const items = await todolist.getItems()
-                return Response.json(items)
-            },
-            POST: async (req) => {
-                let data
+  port: 3000,
 
-                try {
-                    data = await req.body?.json()
-                } catch (e) {
-                    return new Response('json inválido', { status: 400 })
-                }
+  routes: {
+    "/": () =>
+      new Response(Bun.file("./public/index.html")),
 
-                if (!data?.title)
-                    return new Response('É preciso informar title', { status: 400 })
+    "/api-debugger": () =>
+      new Response(Bun.file("./public/api-debugger.html")),
 
-                let index: number
+    "/test": testRoute,
 
-                try {
-                    index = await todolist.addItem(new Item(data.title))
-                } catch (error) {
-                    return new Response('Erro ao adicionar item', { status: 500 })
-                }
+    "/todo": {
+      GET: async () => {
+        const items = await todolist.getItems()
+        return Response.json(items)
+      },
 
-                return Response.json({ index }, { status: 201 })
-            }
-        },
-        '/todo/:index': {
-            GET: () => {
-                // @todo: DEVE RETORNAR A INFORMAÇÃO DE UM ITEM ESPECÍFICO
-                return new Response('Not Implemented yet!', { status: 501 })
-            },
-            DELETE: async (req) => {
-                const indexStr = req.params.index
-                const index = parseInt(indexStr)
-                if (isNaN(index))
-                    return new Response('index precisa ser um número inteiro', { status: 400 })
-                try {
-                    await todolist.removeItem(index)
-                } catch(e) {
-                    return Response.json(e, { status: 400 })
-                }
-                return new Response(`Item de indice ${index}, removido com sucesso`)
-            }
+      POST: async (req: Request) => {
+        let data
+
+        try {
+          data = await req.json()
+        } catch {
+          return new Response("JSON inválido", {
+            status: 400
+          })
         }
-    },
-    fetch(req) {
-        return new Response("Not Found", { status: 404 });
-    },
-});
 
-console.log(`Server running at http://localhost:${server.port}`);
+        if (!data?.title)
+          return new Response(
+            "É preciso informar title",
+            { status: 400 }
+          )
+
+        try {
+          const index = await todolist.addItem(
+            new Item(data.title)
+          )
+
+          return Response.json(
+            { index },
+            { status: 201 }
+          )
+        } catch (e) {
+          return new Response(String(e), {
+            status: 400
+          })
+        }
+      }
+    },
+
+    "/todo/:index": {
+      GET: async (req: any) => {
+        const index = parseInt(req.params.index)
+
+        if (isNaN(index))
+          return new Response(
+            "Índice inválido",
+            { status: 400 }
+          )
+
+        try {
+          const item =
+            await todolist.getItem(index)
+
+          return Response.json(item)
+        } catch (e) {
+          return new Response(String(e), {
+            status: 404
+          })
+        }
+      },
+
+      PUT: async (req: any) => {
+        const index = parseInt(req.params.index)
+
+        if (isNaN(index))
+          return new Response(
+            "Índice inválido",
+            { status: 400 }
+          )
+
+        let data
+
+        try {
+          data = await req.json()
+        } catch {
+          return new Response(
+            "JSON inválido",
+            { status: 400 }
+          )
+        }
+
+        if (!data?.title)
+          return new Response(
+            "É preciso informar title",
+            { status: 400 }
+          )
+
+        try {
+          await todolist.updateItem(
+            index,
+            data.title
+          )
+
+          return new Response(
+            "Item atualizado"
+          )
+        } catch (e) {
+          return new Response(String(e), {
+            status: 400
+          })
+        }
+      },
+
+      DELETE: async (req: any) => {
+        const index =
+          parseInt(req.params.index)
+
+        if (isNaN(index))
+          return new Response(
+            "Índice inválido",
+            { status: 400 }
+          )
+
+        try {
+          await todolist.removeItem(index)
+
+          return new Response(
+            "Item removido"
+          )
+        } catch (e) {
+          return new Response(String(e), {
+            status: 400
+          })
+        }
+      }
+    }
+  },
+
+  fetch() {
+    return new Response(
+      "Rota não encontrada",
+      { status: 404 }
+    )
+  }
+})
+
+console.log(
+  `Servidor rodando em http://localhost:${server.port}`
+)
